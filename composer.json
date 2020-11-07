@@ -1,0 +1,21 @@
+{
+    "name": "cswannauger/pwa-spider",
+    "description": "A web spider to scrape Progressive Web Apps",
+    "authors": [
+        {
+            "name": "ChesterSA",
+            "email": "chester@hey.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": "^7.3",
+        "bopoda/robots-txt-parser": "^2.4",
+        "duzun/hquery": "^3.0"
+    },
+    "autoload": {
+        "psr-0": {
+            "PWASpider": "src/"
+        }
+    }
+}

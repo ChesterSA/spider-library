@@ -1,0 +1,139 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "8a24d3b0bac73a073ea380b5eb9cfc37",
+    "packages": [
+        {
+            "name": "bopoda/robots-txt-parser",
+            "version": "v2.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/bopoda/robots-txt-parser.git",
+                "reference": "484a66351752cd5eb53206974f4be9240d35f408"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/bopoda/robots-txt-parser/zipball/484a66351752cd5eb53206974f4be9240d35f408",
+                "reference": "484a66351752cd5eb53206974f4be9240d35f408",
+                "shasum": ""
+            },
+            "require": {
+                "ext-mbstring": "*",
+                "php": ">=5.4.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": ">=3.7"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "RobotsTxtParser\\": "src/RobotsTxtParser"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Eugene Yurkevich",
+                    "email": "bopodaa@gmail.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "PHP Class for parsing robots.txt files according to Google, Yandex specifications.",
+            "homepage": "https://github.com/bopoda/robots-txt-parser",
+            "keywords": [
+                "google",
+                "parser",
+                "robots.txt",
+                "yandex"
+            ],
+            "time": "2019-10-29T16:03:24+00:00"
+        },
+        {
+            "name": "duzun/hquery",
+            "version": "3.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/duzun/hQuery.php.git",
+                "reference": "e3e8dcbe9de7cac5693aeb8c2a62a761cb152e49"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/duzun/hQuery.php/zipball/e3e8dcbe9de7cac5693aeb8c2a62a761cb152e49",
+                "reference": "e3e8dcbe9de7cac5693aeb8c2a62a761cb152e49",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3"
+            },
+            "require-dev": {
+                "symfony/css-selector": "*",
+                "symfony/dom-crawler": "*"
+            },
+            "suggest": {
+                "php-http/discovery": "Might be required by hQuery::sendRequest()",
+                "php-http/message": "Might be required by hQuery::fromHTML($message) or hQuery::fromURL()",
+                "php-http/socket-client": "Could be used to make HTTP requests before calling hQuery::fromHTML($message)"
+            },
+            "type": "library",
+            "extra": {
+                "apigen/apigen": "*",
+                "php-http/mock-client": "*",
+                "php-http/discovery": "*",
+                "guzzlehttp/psr7": "*"
+            },
+            "autoload": {
+                "psr-4": {
+                    "duzun\\": "src/"
+                },
+                "psr-0": {
+                    "hQuery": "src/"
+                },
+                "classmap": [
+                    "hquery.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Dumitru Uzun",
+                    "email": "contact@duzun.me",
+                    "homepage": "https://DUzun.Me",
+                    "role": "Author"
+                }
+            ],
+            "description": "An extremely fast web scraper that parses megabytes of HTML in a blink of an eye. No dependencies. PHP5+",
+            "homepage": "https://duzun.me/playground/hquery",
+            "keywords": [
+                "crawling",
+                "html",
+                "php",
+                "scraper",
+                "scraping",
+                "web",
+                "xhtml",
+                "xml"
+            ],
+            "time": "2019-07-19T09:39:05+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "dev",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^7.3"
+    },
+    "platform-dev": [],
+    "plugin-api-version": "1.1.0"
+}
