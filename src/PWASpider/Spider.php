@@ -14,12 +14,14 @@ class Spider
         {        
             $link = $links[$i];
             $links = $link ? array_merge($links, Spider::scrape($link)) : $links;
+            $links = array_unique($links);
         }
         return $links;
     }
 
     private static function scrape($url)
     {
+        echo($url . "\n");
         if ($url == null) { return []; }
         $parsed = parse_url($url);
         $robotsurl = "http://{$parsed['host']}/robots.txt";
@@ -31,22 +33,28 @@ class Spider
         $robots = file_get_contents($robotsurl);
         $parser = new RobotsTxtParser($robots);
         $validator = new RobotsTxtValidator($parser->getRules());
-        $userAgent = 'MyPWABot';
+        $userAgent = 'MyPWASpider';
 
         if ($validator->isUrlAllow($url, $userAgent)) {
             $doc = hQuery::fromFile($url, false);
+            if ($doc == null) { return []; }
             try {
                 $tags = $doc->find('a');
             } catch (\Exception $e) {
                 echo("PANIC");
             }
             $links = [];
+            if ($tags == null) { return []; }
             foreach($tags as $key => $value) {
-                array_push($links, $value->attr('href'));
+                if(!array_key_exists('scheme' , parse_url($value->attr('href')))) 
+                { continue; }
+                $url = parse_url($value->attr('href'))['scheme'] . '://' . parse_url($value->attr('href'))['host'];
+                array_push($links, $url);
+                $links = array_unique($links);
             }
             return $links ?? [];
         }
         return [];
     }
-    
+
 }
