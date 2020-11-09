@@ -15,9 +15,9 @@ class Spider
      * @param  int $limit An integer setting the limit on how many sites should be returned 
      * @return array An array of the first $limit sites searched
      */
-    public static function start(array $links, int $limit = 1000)
+    public static function start(array $links, int $limit = 1000000)
     {
-        for($i = 0; $i > sizeof($links) || sizeof($links) < $limit; $i++)
+        for($i = 0; $i >= sizeof($links) || sizeof($links) < $limit; $i++)
         {        
             echo ("$i: ");
             if(array_key_exists($i, $links) && $links[$i] != null) { 
@@ -26,12 +26,10 @@ class Spider
             else if ($i < sizeof($links)) { 
                 continue; 
             }
-            else {
-                break;
-            }
+        
 
             $links = array_unique(array_merge($links, Spider::scrape($link)));
-
+            echo("\tSize: " . sizeof($links) . "\n");
             // if ($i >= sizeof($links)) { break; }
         }
         return array_slice($links, 0, $limit);
@@ -78,8 +76,6 @@ class Spider
      */
     private static function validate(string $url, string $userAgent, bool $isFormatted = false)
     {
-        if ($url == null) { return false; }
-
         if(!$isFormatted){
             $parsed = parse_url($url);
             $url = "http://{$parsed['host']}/robots.txt";
