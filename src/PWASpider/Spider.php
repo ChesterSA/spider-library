@@ -1,59 +1,59 @@
 <?php 
 namespace PWASpider;
-require_once __DIR__ . '/../../vendor/autoload.php';
+
 use Exception;
 use duzun\hQuery;
 use RobotsTxtParser\RobotsTxtParser;
 use RobotsTxtParser\RobotsTxtValidator;
 
 class Spider
-{
-    public static function start($links, $limit = 1000)
+{     
+    /**
+     * Initiates the web crawler, looking for PWAs
+     * 
+     * @param  array $links An array of strings with the seed URLs to search through
+     * @param  int $limit An integer setting the limit on how many sites should be returned 
+     * @return array An array of the first $limit sites searched
+     */
+    public static function start(array $links, int $limit = 1000)
     {
-        // var_dump(Spider::scrape("http://account.f4wonline.com/"));
-        // die();
         for($i = 0; $i > sizeof($links) || sizeof($links) < $limit; $i++)
         {        
-            $initial_size = sizeof($links);
-            if( array_key_exists($i, $links)) {
-                $link = $links[$i];
+            echo ("$i: ");
+            if(array_key_exists($i, $links) && $links[$i] != null) { 
+                $link = $links[$i]; 
             }
-            else if ($i < sizeof($links)){
-                continue;
+            else if ($i < sizeof($links)) { 
+                continue; 
             }
-            $var = Spider::scrape($link);
-            $links = $link ? array_merge($links, $var) : $links;
-            $links = array_unique($links);
+            else {
+                break;
+            }
 
-            //Check if any new links have been added
-            // if (sizeof($links) == $initial_size) { break; }
+            $links = array_unique(array_merge($links, Spider::scrape($link)));
 
-            if ($i >= sizeof($links)) { break; }
+            // if ($i >= sizeof($links)) { break; }
         }
         return array_slice($links, 0, $limit);
     }
-
-    private static function scrape($url)
+    
+    /**
+     * Scrapes the given url, and returns a list of the URLs on the page
+     *
+     * @param string $url the URL of the page to search
+     * @return array An array of all URLs present on the page in <a> tags
+     */
+    private static function scrape(string $url)
     {
         echo($url . "\n");
         try {
-            $validated = Spider::validate($url);
-    
-            if ($validated) {
-                $doc = hQuery::fromFile($url, false);
-                if ($doc == null) { throw new Exception('Web Page was empty'); }
-                try {
-                    $tags = $doc->find('a');
-                } catch (Exception $e) {
-                    throw new Exception('Error finding <a> tags in page');
-                }
+            if (Spider::validate($url, "MyPWABot")) {
+                $tags = Spider::getTags($url, 'a');
+                if ($tags == null) { return []; }
+
                 $links = [];
-
-                if ($tags == null) { throw new Exception('No Links in Page'); }
-
-                foreach($tags as $key => $value) {
-                    if(!array_key_exists('scheme' , parse_url($value->attr('href')))) { continue; }
-                    $url = parse_url($value->attr('href'))['scheme'] . '://' . parse_url($value->attr('href'))['host'];
+                foreach($tags as $key => $tag) {
+                    $url = Spider::getUrl($tag);
                     array_push($links, $url);
                     $links = array_unique($links);
                 }
@@ -62,43 +62,71 @@ class Spider
             else { return []; }
         }
         catch (Exception $e){
-            echo ("---\n" . $url . "\n" . $e->getMessage() . "\n---\n");
+            error_log("\n{$e->getMessage()}\n");
             return [];
         }
         return [];
     }
-
-    private static function validate($url, $isFormatted = false)
+      
+    /**
+     * Validates that the given URL exists, and that the given UserAgent can access it
+     *
+     * @param  string $url the URL to validate
+     * @param  string $userAgent The name of the UserAgent trying to access the page
+     * @param  bool $isFormatted If the URL is formatted to a robots.txt page or not
+     * @return bool If the given UserAgent can access the page
+     */
+    private static function validate(string $url, string $userAgent, bool $isFormatted = false)
     {
-        // echo "---\n";
-        // echo "1: " . $url . "\n";
         if ($url == null) { return false; }
-        // echo "2: " . $url . "\n";
+
         if(!$isFormatted){
             $parsed = parse_url($url);
             $url = "http://{$parsed['host']}/robots.txt";
-            // echo "5: " . $url . "\n";
-
         }
-        $file_headers = @get_headers($url);
-        // echo $file_headers[0] . "\n";
-        // echo "3: " . $url . "\n";
-        if($file_headers && in_array('HTTP/1.1 200 OK', $file_headers)){
-            // echo "4: " . $url . "\n";
 
-            
-            // echo "6: " . $url . "\n";
-            
+        $file_headers = @get_headers($url);
+        if($file_headers && in_array('HTTP/1.1 200 OK', $file_headers)){
             $robots = file_get_contents($url);
             $parser = new RobotsTxtParser($robots);
             $validator = new RobotsTxtValidator($parser->getRules());
-            $userAgent = 'MyPWASpider';
-            // echo "7: " . $url . "\n";
-            // echo "---\n\n";
             return $validator->isUrlAllow($url, $userAgent);
         }
         else {
             return false;
         }
+    }
+    
+    /**
+     * Returns an array containing all instances of the given tag on the url given
+     *
+     * @param  string $url The URL of the page to scan
+     * @param  string $tag The name of the tag to search for, without angle brackets
+     * @return array An array with all the tags from the URL page
+     */
+    private static function getTags(string $url, string $tag)
+    {
+        //TODO: Warning on 403,404 error from hQuery
+        $doc = hQuery::fromFile($url, false);
+        if ($doc == null) { return []; }
+        try {
+            $tags = $doc->find($tag);
+        } catch (Exception $e) {
+            return [];
+        }
+        return $tags;
+    }
+ 
+    /**
+     * Given a formatted <a> tag, finds the base URL and returns it
+     *
+     * @param  mixed $tag A formatted URL to search through
+     * @return string The URL contained within the tag
+     */
+    private static function getUrl($tag)
+    {
+        //TODO Warning when $tag is a bool
+        if(!array_key_exists('scheme' , parse_url($tag->attr('href')))) { return null; }
+        return parse_url($tag->attr('href'))['scheme'] . '://' . parse_url($tag->attr('href'))['host'];
     }
 }
