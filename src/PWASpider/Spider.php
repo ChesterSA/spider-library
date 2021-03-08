@@ -1,13 +1,14 @@
 <?php 
 namespace PWASpider;
-
 use Exception;
 use duzun\hQuery;
 use RobotsTxtParser\RobotsTxtParser;
 use RobotsTxtParser\RobotsTxtValidator;
 
 class Spider
-{     
+{    
+    private static $links;
+    private static $sites = [];
     /**
      * Initiates the web crawler, looking for PWAs
      * 
@@ -17,22 +18,17 @@ class Spider
      */
     public static function start(array $links, int $limit = 1000000)
     {
-        for($i = 0; $i >= sizeof($links) || sizeof($links) < $limit; $i++)
-        {        
-            echo ("$i: ");
-            if(array_key_exists($i, $links) && $links[$i] != null) { 
-                $link = $links[$i]; 
+        Spider::$links = $links;
+        for($i = 0; $i >= sizeof(Spider::$links) || sizeof(Spider::$sites) < $limit; $i++){        
+            if(array_key_exists($i, Spider::$links) && Spider::$links[$i] != null) { 
+                $link = Spider::$links[$i]; 
             }
-            else if ($i < sizeof($links)) { 
+            else if ($i < sizeof(Spider::$links)) { 
                 continue; 
             }
-        
-
-            $links = array_unique(array_merge($links, Spider::scrape($link)));
-            echo("\tSize: " . sizeof($links) . "\n");
-            // if ($i >= sizeof($links)) { break; }
+            Spider::scrape($link);
         }
-        return array_slice($links, 0, $limit);
+        return array_slice(Spider::$sites, 0, $limit);
     }
     
     /**
@@ -42,20 +38,20 @@ class Spider
      * @return array An array of all URLs present on the page in <a> tags
      */
     private static function scrape(string $url)
-    {
-        echo($url . "\n");
+    {    
         try {
             if (Spider::validate($url, "MyPWABot")) {
+
+                Spider::getDetails($url);
+
                 $tags = Spider::getTags($url, 'a');
                 if ($tags == null) { return []; }
 
-                $links = [];
                 foreach($tags as $key => $tag) {
                     $url = Spider::getUrl($tag);
-                    array_push($links, $url);
-                    $links = array_unique($links);
+                    array_push(Spider::$links, $url);
+                    Spider::$links = array_unique(Spider::$links);
                 }
-                return $links;
             }
             else { return []; }
         }
@@ -64,6 +60,34 @@ class Spider
             return [];
         }
         return [];
+    }
+
+    private static function getDetails($url)
+    {
+        $doc = hQuery::fromFile($url, false);
+        
+        $details = [];
+        if ($doc == null) { return []; }
+        try {
+            $details['url'] = $url;
+            $details['title'] = $doc->find('title')[0] ?? 'No Title';
+            
+            $metas = $doc->find('meta');
+            $hasDesc = false;
+            foreach($metas as $m){
+                if($m->attr('name') == 'description'){
+                    $details['description'] = $m->attr('content');   
+                    $hasDesc = true;
+                }
+            }
+            if (!$hasDesc) {
+                $details['description'] = 'No Description';
+            }
+            array_push(Spider::$sites, $details);
+        } catch (Exception $e) {
+            return [];
+        }
+
     }
       
     /**
@@ -104,6 +128,7 @@ class Spider
     {
         //TODO: Warning on 403,404 error from hQuery
         $doc = hQuery::fromFile($url, false);
+
         if ($doc == null) { return []; }
         try {
             $tags = $doc->find($tag);
