@@ -9,6 +9,7 @@ class Spider
 {    
     private static $links;
     private static $sites = [];
+
     /**
      * Initiates the web crawler, looking for PWAs
      * 
@@ -19,7 +20,8 @@ class Spider
     public static function start(array $links, int $limit = 1000000)
     {
         Spider::$links = $links;
-        for($i = 0; $i >= sizeof(Spider::$links) || sizeof(Spider::$sites) < $limit; $i++){        
+        for($i = 0; $i < sizeof(Spider::$links) && sizeof(Spider::$sites) < $limit; $i++){      
+              
             if(array_key_exists($i, Spider::$links) && Spider::$links[$i] != null) { 
                 $link = Spider::$links[$i]; 
             }
@@ -41,55 +43,53 @@ class Spider
     {    
         try {
             if (Spider::validate($url, "MyPWABot")) {
+                $doc = hQuery::fromFile($url, false);
+                if ($doc == null) { return []; }
+                Spider::getDetails($doc);
 
-                Spider::getDetails($url);
-
-                $tags = Spider::getTags($url, 'a');
+                $tags = $doc->find('a');
                 if ($tags == null) { return []; }
-
                 foreach($tags as $key => $tag) {
                     $url = Spider::getUrl($tag);
                     array_push(Spider::$links, $url);
                     Spider::$links = array_unique(Spider::$links);
                 }
             }
-            else { return []; }
         }
         catch (Exception $e){
             error_log("\n{$e->getMessage()}\n");
-            return [];
         }
         return [];
     }
 
-    private static function getDetails($url)
+    private static function getDetails($doc)
     {
-        $doc = hQuery::fromFile($url, false);
-        
-        $details = [];
-        if ($doc == null) { return []; }
-        try {
-            $details['url'] = $url;
+        if(Spider::checkPWA(htmlspecialchars($doc)))
+        {
+            $details = [];
+            $details['url'] = $doc->href;
             $details['title'] = $doc->find('title')[0] ?? 'No Title';
             
             $metas = $doc->find('meta');
-            $hasDesc = false;
+            $details['description'] = 'No Description';
             foreach($metas as $m){
                 if($m->attr('name') == 'description'){
-                    $details['description'] = $m->attr('content');   
-                    $hasDesc = true;
+                    $details['description'] = $m->attr('content');
+                    break;
                 }
             }
-            if (!$hasDesc) {
-                $details['description'] = 'No Description';
-            }
             array_push(Spider::$sites, $details);
-        } catch (Exception $e) {
-            return [];
+            // echo sizeof(Spider::$sites);
+            // array_unique(Spider::$sites);
         }
+    }
+
+    public static function checkPWA($html)
+    {
+        return strpos($html, htmlspecialchars("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1")) !== false;
 
     }
-      
+
     /**
      * Validates that the given URL exists, and that the given UserAgent can access it
      *
@@ -117,27 +117,6 @@ class Spider
         }
     }
     
-    /**
-     * Returns an array containing all instances of the given tag on the url given
-     *
-     * @param  string $url The URL of the page to scan
-     * @param  string $tag The name of the tag to search for, without angle brackets
-     * @return array An array with all the tags from the URL page
-     */
-    private static function getTags(string $url, string $tag)
-    {
-        //TODO: Warning on 403,404 error from hQuery
-        $doc = hQuery::fromFile($url, false);
-
-        if ($doc == null) { return []; }
-        try {
-            $tags = $doc->find($tag);
-        } catch (Exception $e) {
-            return [];
-        }
-        return $tags;
-    }
- 
     /**
      * Given a formatted <a> tag, finds the base URL and returns it
      *
