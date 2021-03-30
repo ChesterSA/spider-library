@@ -43,6 +43,7 @@ class Spider
     {    
         try {
             if (Spider::validate($url, "MyPWABot")) {
+                
                 $doc = hQuery::fromFile($url, false);
                 if ($doc == null) { return []; }
                 Spider::getDetails($doc);
@@ -64,11 +65,47 @@ class Spider
 
     private static function getDetails($doc)
     {
-        if(Spider::checkPWA(htmlspecialchars($doc)))
+        
+        $manifest = Spider::checkPWA($doc);
+        
+        if($manifest)
         {
+            $json = @file_get_contents($manifest);
+            $data = json_decode($json, true);
+            if($data == null){
+                return;
+            }
+            
             $details = [];
             $details['url'] = $doc->href;
-            $details['title'] = $doc->find('title')[0] ?? 'No Title';
+            $details['title'] = $data['name'];
+
+            $src = '';
+            $size = 0;
+            foreach($data['icons'] as $icon) {
+                //Gets the size of the first dimension of the icon (Assumes icons are square)
+                if(!array_key_exists('sizes', $icon)){
+                    $src = $icon['src'];
+                    break;
+                }
+                $dim = intval(substr($icon['sizes'], 0, strpos($icon['sizes'], 'x')));
+                if($dim > $size){
+                    if(substr($icon['src'], 0, 2) == "//"){
+                        $src = "http:" . $icon['src'];
+                    }
+                    else if(strpos($icon['src'], '/') == 0){
+                        $src = $doc->href . $icon['src'];
+                    }
+                    else if (substr($icon['src'], 0, 4) != "http"){
+                        $src = $doc->href . '/' . $icon['src'];
+                    }
+                    else {
+                        $src = $icon['src'];
+                    }
+                    $size = $dim;
+                }
+            }
+            $details['img'] = $src;
             
             $metas = $doc->find('meta');
             $details['description'] = 'No Description';
@@ -79,15 +116,18 @@ class Spider
                 }
             }
             array_push(Spider::$sites, $details);
-            // echo sizeof(Spider::$sites);
-            // array_unique(Spider::$sites);
         }
     }
 
-    public static function checkPWA($html)
+    public static function checkPWA($doc)
     {
-        return strpos($html, htmlspecialchars("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1")) !== false;
-
+        $links = $doc->find('link');
+        foreach($links as $link) {
+            if($link->attr('rel') == "manifest"){
+                return $link->attr('href');
+            }
+        }
+        return false;
     }
 
     /**
@@ -98,23 +138,19 @@ class Spider
      * @param  bool $isFormatted If the URL is formatted to a robots.txt page or not
      * @return bool If the given UserAgent can access the page
      */
-    private static function validate(string $url, string $userAgent, bool $isFormatted = false)
+    private static function validate(string $url, string $userAgent)
     {
-        if(!$isFormatted){
-            $parsed = parse_url($url);
-            $url = "http://{$parsed['host']}/robots.txt";
-        }
-
+        $parsed = parse_url($url);
+        $url = "http://{$parsed['host']}/robots.txt";
         $file_headers = @get_headers($url);
-        if($file_headers && in_array('HTTP/1.1 200 OK', $file_headers)){
-            $robots = file_get_contents($url);
+        
+        if($file_headers && (in_array('HTTP/1.0 200 OK', $file_headers) || in_array('HTTP/1.1 200 OK', $file_headers))){
+            $robots = @file_get_contents($url);
             $parser = new RobotsTxtParser($robots);
             $validator = new RobotsTxtValidator($parser->getRules());
             return $validator->isUrlAllow($url, $userAgent);
         }
-        else {
-            return false;
-        }
+        return false;
     }
     
     /**
