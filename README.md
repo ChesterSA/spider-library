@@ -3,7 +3,7 @@ This is a simple PHP package to install a web spider to find and return examples
 
 ### Installation
 The package is hosted on composer so can be installed with the command:
-```
+```php
 composer require cswannauger/pwa-spider
 ```
 
@@ -16,7 +16,7 @@ $sites = Spider::start(array $links, int $limit = 1000000);
 The `$links` array is an array of URLs you would like the scraper to start with, and the optional variable `$limit` is set to the maximum amount of sites you would like returned. If not used it defaults to 1 million which could take days to run.
 
 The method returns a nested array containing details of every web app. The array for each site is in the following format
-```
+```php
  [
     'url' => 'https://twitter.com',
     'title' => 'Twitter',
