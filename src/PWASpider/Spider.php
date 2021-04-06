@@ -65,7 +65,6 @@ class Spider
 
     private static function getDetails($doc)
     {
-        
         $manifest = Spider::checkPWA($doc);
         
         if($manifest)
@@ -119,6 +118,11 @@ class Spider
         }
     }
 
+    /**
+     * Checks an hQuery document to see if it is an example of a Progressive Web App
+     * 
+     * @param  object $doc An hQuery document to search and check for PWA validity
+     */
     public static function checkPWA($doc)
     {
         $links = $doc->find('link');
